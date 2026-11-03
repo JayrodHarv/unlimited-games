@@ -1,0 +1,26 @@
+* { box-sizing: border-box; }
+:root { color-scheme: dark; font-family: system-ui, sans-serif; color: #e8edf5; background: #10151e; }
+body { max-width: 1160px; margin: auto; padding: 36px 24px; }
+header { margin-bottom: 24px; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -.05em; margin: 8px 0; }
+h2 { margin-top: 0; }
+p, .note { color: #aab6c9; line-height: 1.6; }
+.eyebrow { color: #9bd5bd; font-size: .75rem; letter-spacing: .15em; }
+main { display: grid; grid-template-columns: 330px 1fr; gap: 24px; align-items: start; }
+section { background: #19212e; border: 1px solid #303b4c; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+.table { min-height: 450px; }
+label { display: block; font-size: .9rem; margin: 14px 0 6px; }
+input, textarea, select { display: block; width: 100%; background: #101722; color: #e8edf5; border: 1px solid #435168; border-radius: 7px; padding: 10px; font: inherit; }
+textarea { resize: vertical; }
+button { border: 0; border-radius: 7px; background: #a7e2c7; color: #15271e; padding: 11px 15px; font: inherit; cursor: pointer; margin-top: 14px; }
+button:disabled { opacity: .5; cursor: wait; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid #a7e2c7; outline-offset: 3px; }
+#games button { width: 100%; text-align: left; background: #293549; color: #e8edf5; overflow-wrap: anywhere; }
+li { padding: 12px 0; border-bottom: 1px solid #303b4c; overflow-wrap: anywhere; }
+li p { margin: 4px 0; }
+.preserve { white-space: pre-wrap; overflow-wrap: anywhere; }
+summary { cursor: pointer; color: #a7e2c7; }
+#message { min-height: 1.5em; color: #ffc7a2; }
+.note { font-size: .85rem; }
+[hidden] { display: none !important; }
+@media (max-width: 760px) { main { grid-template-columns: 1fr; } body { padding: 24px 16px; } }

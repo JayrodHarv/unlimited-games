@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unlimited Games</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header><span class="eyebrow">YOUR TABLE, YOUR RULES</span><h1>Unlimited Games</h1>
+    <p>A starting place for text-based, turn-based games.</p></header>
+  <p id="message" role="status" aria-live="polite"></p>
+  <main>
+    <aside>
+      <section><h2>Start a game</h2>
+        <form id="create-form">
+          <label for="title">Game title</label><input id="title" maxlength="120" placeholder="A journey through the stars" required>
+          <label for="players">Players (one per line)</label><textarea id="players" rows="3" placeholder="Player 1&#10;Player 2" required></textarea>
+          <label for="rules">Rules</label><textarea id="rules" rows="5" maxlength="10000" placeholder="Describe the goal and how each turn works…" required></textarea>
+          <button type="submit">Create game</button>
+        </form>
+      </section>
+      <section><h2>Saved games</h2><div id="games"></div></section>
+    </aside>
+    <section class="table">
+      <div id="empty"><h2>Every game starts with an idea.</h2><p>Create a game or open one of your saved games.</p></div>
+      <article id="active-game" hidden>
+        <span class="eyebrow">GAME IN PROGRESS</span><h2 id="game-title"></h2>
+        <details open><summary>Rules</summary><p id="game-rules" class="preserve"></p></details>
+        <h3>Move history</h3><ol id="moves"></ol>
+        <form id="move-form">
+          <label for="player">Player</label><select id="player"></select>
+          <label for="action">Move</label><textarea id="action" rows="3" maxlength="5000" placeholder="What happens this turn?" required></textarea>
+          <button type="submit">Record move</button>
+        </form>
+        <p class="note">Starter mode: moves are saved as written. AI generation and game rule enforcement are not connected yet.</p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
