@@ -33,7 +33,7 @@ def get_game(game_id):
     return game
 
 
-def create_game(data):
+def create_game(data, commit=True):
     title = require_text(data.get("title"), "Title", 120)
     rules = require_text(data.get("rules"), "Rules", 10000)
     players = data.get("players")
@@ -43,11 +43,12 @@ def create_game(data):
     if len(set(players)) != len(players):
         raise BadRequest("Player names must be unique.")
     connection = get_db()
-    with connection:
-        cursor = connection.execute(
-            "INSERT INTO games (title, rules, players_json) VALUES (?, ?, ?)",
-            (title, rules, json.dumps(players)),
-        )
+    cursor = connection.execute(
+        "INSERT INTO games (title, rules, players_json) VALUES (?, ?, ?)",
+        (title, rules, json.dumps(players)),
+    )
+    if commit:
+        connection.commit()
     return get_game(cursor.lastrowid)
 
 
@@ -68,3 +69,51 @@ def record_move(game_id, data):
             (game_id, turn, player, action),
         )
     return get_game(game_id)
+
+
+def validate_idea(data):
+    from .ai_client import FIELDS
+    if not isinstance(data, dict):
+        raise BadRequest("Provide a structured game idea.")
+    return {field: require_text(data.get(field), field.capitalize(),
+                               120 if field == "title" else 1200) for field in FIELDS}
+
+
+def draft_idea(data):
+    from .ai_client import generate_idea
+    prompt = require_text(data.get("prompt"), "Game idea or revision", 5000)
+    context = {"request": prompt}
+    if data.get("idea") is not None:
+        context["current_idea"] = validate_idea(data["idea"])
+    for field in ("genre", "complexity"):
+        value = data.get(field)
+        if value:
+            context[field] = require_text(value, field, 80)
+    return generate_idea(context)
+
+
+def list_ideas():
+    return [dict(id=row["id"], idea=json.loads(row["definition_json"]))
+            for row in get_db().execute("SELECT * FROM ideas ORDER BY id DESC")]
+
+
+def save_idea(data):
+    idea = validate_idea(data.get("idea"))
+    connection = get_db()
+    with connection:
+        cursor = connection.execute("INSERT INTO ideas (definition_json) VALUES (?)", (json.dumps(idea),))
+    return {"id": cursor.lastrowid, "idea": idea}
+
+
+def start_instance(idea_id, data):
+    connection = get_db()
+    row = connection.execute("SELECT * FROM ideas WHERE id = ?", (idea_id,)).fetchone()
+    if row is None:
+        raise NotFound("Saved idea not found.")
+    idea = json.loads(row["definition_json"])
+    rules = "\n\n".join(f"{field.capitalize()}\n{value}" for field, value in idea.items() if field != "title")
+    # Both the new session and its source link commit together.
+    with connection:
+        game = create_game({"title": idea["title"], "rules": rules, "players": data.get("players")}, commit=False)
+        connection.execute("INSERT INTO idea_instances (game_id, idea_id) VALUES (?, ?)", (game["id"], idea_id))
+    return game

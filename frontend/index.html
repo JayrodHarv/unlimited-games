@@ -13,18 +13,34 @@
   <p id="message" role="status" aria-live="polite"></p>
   <main>
     <aside>
-      <section><h2>Start a game</h2>
+      <section><h2>1. Imagine a game</h2>
         <form id="create-form">
-          <label for="title">Game title</label><input id="title" maxlength="120" placeholder="A journey through the stars" required>
-          <label for="players">Players (one per line)</label><textarea id="players" rows="3" placeholder="Player 1&#10;Player 2" required></textarea>
-          <label for="rules">Rules</label><textarea id="rules" rows="5" maxlength="10000" placeholder="Describe the goal and how each turn works…" required></textarea>
-          <button type="submit">Create game</button>
+          <label for="genre">Genre (optional)</label><select id="genre"><option value="">Surprise me</option><option>Adventure</option><option>Mystery</option><option>Strategy</option><option>Fantasy</option><option>Science fiction</option></select>
+          <label for="complexity">Complexity</label><select id="complexity"><option>Simple</option><option>Moderate</option><option>Detailed</option></select>
+          <label for="prompt">Your game idea</label><textarea id="prompt" rows="5" maxlength="5000" placeholder="Explore a drifting space station where every room changes gravity…" required></textarea>
+          <button type="submit">Generate game idea</button>
         </form>
       </section>
-      <section><h2>Saved games</h2><div id="games"></div></section>
+      <section><h2>Saved ideas</h2><div id="ideas"></div></section>
+      <section><h2>Play sessions</h2><div id="games"></div></section>
     </aside>
     <section class="table">
-      <div id="empty"><h2>Every game starts with an idea.</h2><p>Create a game or open one of your saved games.</p></div>
+      <article id="review" hidden>
+        <span class="eyebrow" id="review-status">2. REVIEW YOUR IDEA</span>
+        <h2 id="idea-title"></h2><div id="idea-details"></div>
+        <form id="revision-form">
+          <label for="revision">What would you like to change?</label>
+          <textarea id="revision" rows="3" maxlength="5000" placeholder="Make it cooperative and add a time limit…" required></textarea>
+          <button type="submit">Revise idea</button>
+        </form>
+        <button id="save-idea" type="button">Approve &amp; save idea</button>
+        <form id="start-form" hidden>
+          <h3>3. Start a play session</h3>
+          <label for="players">Players (one per line)</label><textarea id="players" rows="3" placeholder="Ada&#10;Lin" required></textarea>
+          <button type="submit">Play a new instance</button>
+        </form>
+      </article>
+      <div id="empty"><h2>Every game starts with an idea.</h2><p>Describe an idea, refine it with AI, then save it and start playing.</p></div>
       <article id="active-game" hidden>
         <span class="eyebrow">GAME IN PROGRESS</span><h2 id="game-title"></h2>
         <details open><summary>Rules</summary><p id="game-rules" class="preserve"></p></details>
@@ -34,7 +50,7 @@
           <label for="action">Move</label><textarea id="action" rows="3" maxlength="5000" placeholder="What happens this turn?" required></textarea>
           <button type="submit">Record move</button>
         </form>
-        <p class="note">Starter mode: moves are saved as written. AI generation and game rule enforcement are not connected yet.</p>
+        <p class="note">Pass the screen between players and follow the saved rules. Moves are recorded as written; players resolve outcomes manually.</p>
       </article>
     </section>
   </main>

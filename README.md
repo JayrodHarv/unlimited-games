@@ -6,10 +6,35 @@ players, and the complete ordered move history. Docker runs Gunicorn and keeps
 the SQLite database in a persistent volume. No Node build step or separate
 database container is needed.
 
-This is infrastructure for the AI game project: it records manual moves, but
-does not generate games, judge moves, enforce turn order, track game-specific
-state, or call an AI provider yet. Any nonempty player list can be stored;
-multiplayer currently means passing the interface between players.
+Create a game by describing an idea and optionally choosing a genre and complexity.
+AI returns a structured design with a premise, objective, setup, turns, rules,
+and ending. Ask for revisions as often as needed, then approve and save the idea.
+Saved ideas can start multiple independent play sessions with different players
+and separate move histories. Revising a saved idea produces a new draft; the
+saved version remains available until you approve the new version as another idea.
+Drafts stay in the current page until saved; reloading discards unsaved work.
+
+Play currently uses manual, pass-the-screen move recording. Players follow the
+generated rules and resolve outcomes themselves; AI does not referee moves or
+maintain game-specific state.
+
+## AI configuration
+
+Set `OPENAI_API_KEY` in the project's root `.env` file before starting the app.
+Local runs load this file automatically; existing environment variables take
+precedence. Docker Compose also reads the root `.env` file automatically and
+passes the key into the container without copying the file into the image.
+Optionally set `OPENAI_MODEL` (default `gpt-4o-mini`) to a model supporting Chat
+Completions JSON mode. Docker Compose passes both variables to the backend.
+Set these entries in `.env` before `docker compose up --build -d`.
+Without a key, saved ideas and sessions remain accessible, but generation returns
+an actionable configuration error. Keys stay on the server. Idea prompts,
+selected preferences, and the current design for revisions are sent to OpenAI.
+
+The adapter uses [OpenAI JSON mode](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=chat)
+and validates every required field before showing the result. Provider errors,
+timeouts, incomplete responses, and malformed definitions leave the current draft
+intact so the user can retry.
 
 ## Run with Docker
 
@@ -19,8 +44,8 @@ Install Docker Engine/Desktop with the Compose plugin, then from this folder:
 docker compose up --build -d
 ```
 
-Open http://localhost:8000. Create a game, enter rules and players, then record
-moves. Saved games appear in the sidebar and reload after a restart.
+Open http://localhost:8000. Generate and revise an idea, approve it, then add
+players to start a session. Saved ideas and sessions appear in the sidebar.
 
 ```bash
 docker compose logs -f app       # Show server logs
@@ -63,7 +88,7 @@ another file. Use the Flask debug server only for local development.
 | `backend/app/db.py` | SQLite connections and schema initialization |
 | `backend/app/schema.sql` | Games and moves tables |
 | `backend/app/game_service.py` | Validation and game persistence |
-| `backend/app/ai_client.py` | Future AI boundary; builds context from saved rules/history |
+| `backend/app/ai_client.py` | AI generation adapter; builds context from saved rules/history |
 | `backend/tests/test_app.py` | Persistence, validation, API and static-file checks |
 | `frontend/index.html` | Page structure |
 | `frontend/styles.css` | Responsive styling |
@@ -81,7 +106,11 @@ choose provider SDKs and a deployment environment, lock the tested versions.
 | --- | --- | --- |
 | GET | `/api/health` | App/database connection check |
 | GET | `/api/games` | List saved games |
-| POST | `/api/games` | Create a game |
+| POST | `/api/games` | Create a manual session (legacy API) |
+| POST | `/api/ideas/draft` | Generate or revise an unsaved idea |
+| GET | `/api/ideas` | List approved ideas |
+| POST | `/api/ideas` | Save an approved structured idea |
+| POST | `/api/ideas/<id>/instances` | Start an independent session with players |
 | GET | `/api/games/<id>` | Load rules, players, and move history |
 | POST | `/api/games/<id>/moves` | Append a move |
 
@@ -102,20 +131,19 @@ and missing games return 404. Each move receives a consecutive turn number.
 Parameterized SQL handles stored text. Rules and history remain in SQLite;
 localStorage only remembers which game to open in your browser.
 
-## Next AI steps
+## Design and persistence
 
-1. Add an API adapter to `ai_client.py` to generate a structured game definition.
-2. Add a move evaluator that receives `build_context(game)` plus a proposed move.
-3. Validate its structured output before storing accepted moves and state.
+`POST /api/ideas/draft` takes `prompt`, optional `genre` and `complexity`, and
+optional `idea` for revisions. It returns `{ "idea": ... }` without persisting it.
+`POST /api/ideas` takes `{ "idea": ... }`; required string fields are `title`,
+`premise`, `objective`, `setup`, `turns`, `rules`, and `ending`.
+`POST /api/ideas/<id>/instances` takes `{ "players": ["Ada", "Lin"] }`.
+Each session snapshots the complete design into its rules.
 
-Keep `routes.py` thin and orchestration in `game_service.py`. Do not hold SQLite
-write locks during network calls. When adding state updates, include a version
-check so a response based on an older turn cannot overwrite a newer turn.
-Complete history should stay stored even if you later send only a summary and
-recent moves to a model to fit its context window.
-
-Schema initialization only creates missing tables. For future schema changes,
-add migrations rather than editing existing databases implicitly.
+Schema initialization adds `ideas` and `idea_instances` tables alongside existing
+games and moves, preserving existing records. AI calls happen before any database
+write transaction. Further AI play support can use `build_context(game)` for the
+rules, players, and ordered move history.
 
 ## Verify
 

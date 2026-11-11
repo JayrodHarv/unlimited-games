@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from flask import Flask, jsonify, request
+from dotenv import load_dotenv
 from werkzeug.exceptions import HTTPException
 
 from . import db
@@ -10,6 +11,7 @@ from .routes import api
 
 def create_app(database_path=None):
     root = Path(__file__).resolve().parents[2]
+    load_dotenv(root / ".env", override=False)
     frontend = root / "frontend"
     app = Flask(__name__, static_folder=str(frontend), static_url_path="/static")
     app.config.update(

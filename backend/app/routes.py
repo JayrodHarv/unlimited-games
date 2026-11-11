@@ -38,3 +38,23 @@ def get_game(game_id):
 @api.post("/games/<int:game_id>/moves")
 def move(game_id):
     return jsonify(game_service.record_move(game_id, body())), 201
+
+
+@api.post("/ideas/draft")
+def draft_idea():
+    return jsonify(idea=game_service.draft_idea(body()))
+
+
+@api.get("/ideas")
+def ideas():
+    return jsonify(ideas=game_service.list_ideas())
+
+
+@api.post("/ideas")
+def save_idea():
+    return jsonify(game_service.save_idea(body())), 201
+
+
+@api.post("/ideas/<int:idea_id>/instances")
+def start_instance(idea_id):
+    return jsonify(game_service.start_instance(idea_id, body())), 201

@@ -1,6 +1,8 @@
 const $ = (id) => document.getElementById(id);
 let activeGame = null;
 let busy = false;
+let draft = null;
+let savedIdeaId = null;
 
 async function api(path, data) {
   const response = await fetch(`/api${path}`, data === undefined ? {} : {
@@ -28,6 +30,7 @@ async function perform(task) {
 
 function renderGame(game) {
   activeGame = game;
+  $("review").hidden = true;
   $("empty").hidden = true;
   $("active-game").hidden = false;
   $("game-title").textContent = game.title;
@@ -65,16 +68,80 @@ async function loadGames() {
   return result.games;
 }
 
+const ideaFields = {premise: "Premise", objective: "Objective", setup: "Setup", turns: "Each turn", rules: "Rules & resolution", ending: "How it ends"};
+
+function renderIdea(idea, id = null) {
+  draft = idea;
+  savedIdeaId = id;
+  $("empty").hidden = true;
+  $("active-game").hidden = true;
+  $("review").hidden = false;
+  $("idea-title").textContent = idea.title;
+  $("review-status").textContent = id ? "SAVED GAME IDEA" : "2. REVIEW YOUR IDEA";
+  $("idea-details").replaceChildren(...Object.entries(ideaFields).map(([key, label]) => {
+    const section = document.createElement("div");
+    const heading = document.createElement("h3");
+    heading.textContent = label;
+    const text = document.createElement("p");
+    text.className = "preserve";
+    text.textContent = idea[key];
+    section.append(heading, text);
+    return section;
+  }));
+  $("save-idea").hidden = Boolean(id);
+  $("start-form").hidden = !id;
+}
+
+async function loadIdeas() {
+  const result = await api("/ideas");
+  $("ideas").replaceChildren(...result.ideas.map((saved) => {
+    const button = document.createElement("button");
+    button.textContent = saved.idea.title;
+    button.disabled = busy;
+    button.addEventListener("click", () => renderIdea(saved.idea, saved.id));
+    return button;
+  }));
+  if (!result.ideas.length) $("ideas").textContent = "No saved ideas yet.";
+}
+
 $("create-form").addEventListener("submit", (event) => {
   event.preventDefault();
   perform(async () => {
-    const game = await api("/games", {
-      title: $("title").value,
-      rules: $("rules").value,
-      players: $("players").value.split("\n").map((p) => p.trim()).filter(Boolean),
+    $("message").textContent = "Developing your game idea…";
+    const result = await api("/ideas/draft", {
+      prompt: $("prompt").value, genre: $("genre").value, complexity: $("complexity").value,
+    });
+    renderIdea(result.idea);
+    $("revision").value = "";
+    $("message").textContent = "Review your idea below. Request changes or approve it when ready.";
+  });
+});
+
+$("revision-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  perform(async () => {
+    $("message").textContent = "Revising your game idea…";
+    const result = await api("/ideas/draft", {prompt: $("revision").value, idea: draft});
+    renderIdea(result.idea);
+    $("revision").value = "";
+    $("message").textContent = "Updated idea ready for review.";
+  });
+});
+
+$("save-idea").addEventListener("click", () => perform(async () => {
+  const result = await api("/ideas", {idea: draft});
+  renderIdea(result.idea, result.id);
+  await loadIdeas();
+  $("message").textContent = "Idea saved. Add players to start a new session.";
+}));
+
+$("start-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  perform(async () => {
+    const game = await api(`/ideas/${savedIdeaId}/instances`, {
+      players: $("players").value.split("\n").map((name) => name.trim()).filter(Boolean),
     });
     renderGame(game);
-    $("create-form").reset();
     await loadGames();
   });
 });
@@ -92,6 +159,7 @@ $("move-form").addEventListener("submit", (event) => {
 });
 
 perform(async () => {
+  await loadIdeas();
   const games = await loadGames();
   const saved = localStorage.getItem("activeGameId");
   if (games.some((game) => String(game.id) === saved)) renderGame(await api(`/games/${saved}`));
