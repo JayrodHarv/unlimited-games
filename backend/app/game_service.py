@@ -33,15 +33,19 @@ def get_game(game_id):
     return game
 
 
-def create_game(data, commit=True):
-    title = require_text(data.get("title"), "Title", 120)
-    rules = require_text(data.get("rules"), "Rules", 10000)
-    players = data.get("players")
+def validate_players(players):
     if not isinstance(players, list) or not players:
         raise BadRequest("Provide at least one player in a players array.")
     players = [require_text(player, "Player name", 80) for player in players]
     if len(set(players)) != len(players):
         raise BadRequest("Player names must be unique.")
+    return players
+
+
+def create_game(data, commit=True):
+    title = require_text(data.get("title"), "Title", 120)
+    rules = require_text(data.get("rules"), "Rules", 10000)
+    players = validate_players(data.get("players"))
     connection = get_db()
     cursor = connection.execute(
         "INSERT INTO games (title, rules, players_json) VALUES (?, ?, ?)",
@@ -117,3 +121,46 @@ def start_instance(idea_id, data):
         game = create_game({"title": idea["title"], "rules": rules, "players": data.get("players")}, commit=False)
         connection.execute("INSERT INTO idea_instances (game_id, idea_id) VALUES (?, ?)", (game["id"], idea_id))
     return game
+
+
+def update_idea(idea_id, data):
+    idea = validate_idea(data.get("idea"))
+    connection = get_db()
+    with connection:
+        cursor = connection.execute("UPDATE ideas SET definition_json = ? WHERE id = ?", (json.dumps(idea), idea_id))
+        if cursor.rowcount == 0:
+            raise NotFound("Saved idea not found.")
+    return {"id": idea_id, "idea": idea}
+
+
+def delete_idea(idea_id):
+    connection = get_db()
+    with connection:
+        connection.execute("DELETE FROM idea_instances WHERE idea_id = ?", (idea_id,))
+        cursor = connection.execute("DELETE FROM ideas WHERE id = ?", (idea_id,))
+        if cursor.rowcount == 0:
+            raise NotFound("Saved idea not found.")
+
+
+def update_game(game_id, data):
+    title = require_text(data.get("title"), "Title", 120)
+    rules = require_text(data.get("rules"), "Rules", 10000)
+    players = validate_players(data.get("players"))
+    connection = get_db()
+    with connection:
+        connection.execute("BEGIN IMMEDIATE")
+        game = get_game(game_id)
+        if any(move["player"] not in players for move in game["moves"]):
+            raise BadRequest("Keep players who have recorded moves so history remains consistent.")
+        connection.execute("UPDATE games SET title = ?, rules = ?, players_json = ? WHERE id = ?",
+                           (title, rules, json.dumps(players), game_id))
+    return get_game(game_id)
+
+
+def delete_game(game_id):
+    connection = get_db()
+    with connection:
+        get_game(game_id)
+        connection.execute("DELETE FROM moves WHERE game_id = ?", (game_id,))
+        connection.execute("DELETE FROM idea_instances WHERE game_id = ?", (game_id,))
+        connection.execute("DELETE FROM games WHERE id = ?", (game_id,))

@@ -28,6 +28,11 @@ def generate_idea(context):
             {"role": "user", "content": json.dumps(context)},
         ],
     }
+    effort = os.environ.get("OPENAI_REASONING_EFFORT", "").strip()
+    if effort:
+        if effort not in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
+            raise ServiceUnavailable("OPENAI_REASONING_EFFORT must be none, minimal, low, medium, high, xhigh, or max.")
+        payload["reasoning_effort"] = effort
     request = Request("https://api.openai.com/v1/chat/completions",
                       data=json.dumps(payload).encode(), headers={
                           "Authorization": f"Bearer {key}", "Content-Type": "application/json"})

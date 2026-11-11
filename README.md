@@ -157,3 +157,28 @@ The tests use disposable SQLite files. Check actual Docker deployment with
 `docker compose up --build -d` and `docker compose ps`; this package was tested
 with Python API tests and a local Gunicorn smoke test, not an actual Docker
 build in the authoring environment.
+
+## Edit and delete
+
+Open a saved idea or play session to use its **Edit** and **Delete** buttons.
+The editor lets you change all idea fields, or a session's title, rules, and
+players. Idea edits apply to future sessions; existing sessions retain their
+rules. Session edits preserve move history and require keeping players who
+already recorded moves. Deleting an idea keeps its sessions. Deleting a session
+removes its move history. Both delete controls ask for confirmation.
+
+The API supports `PUT` and `DELETE` on `/api/ideas/<id>` and `/api/games/<id>`.
+Idea updates take `{ "idea": ... }`; session updates take `title`, `rules`,
+and `players`, with the same validation as creation.
+
+Set reasoning effort in the root `.env` file (local runs and Docker):
+
+```dotenv
+OPENAI_MODEL=gpt-6.1-sol
+OPENAI_REASONING_EFFORT=high
+```
+
+Leave `OPENAI_REASONING_EFFORT` unset or empty to use the model default. Choose
+an effort supported by the selected model; GPT-6.1 Sol supports `low`, `medium`,
+`high`, `xhigh`, and `max`. Restart the server after changing `.env`, or run
+`docker compose up --build -d` for Docker.

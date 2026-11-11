@@ -4,9 +4,9 @@ let busy = false;
 let draft = null;
 let savedIdeaId = null;
 
-async function api(path, data) {
-  const response = await fetch(`/api${path}`, data === undefined ? {} : {
-    method: "POST",
+async function api(path, data, method = "POST") {
+  const response = await fetch(`/api${path}`, data === undefined && method === "POST" ? {} : {
+    method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
@@ -34,6 +34,7 @@ function renderGame(game) {
   $("empty").hidden = true;
   $("active-game").hidden = false;
   $("game-title").textContent = game.title;
+  $("game-controls").replaceChildren(...managementButtons("game", game));
   $("game-rules").textContent = game.rules;
   $("player").replaceChildren(...game.players.map((name) => {
     const option = document.createElement("option");
@@ -59,7 +60,7 @@ async function loadGames() {
   const result = await api("/games");
   $("games").replaceChildren(...result.games.map((game) => {
     const button = document.createElement("button");
-    button.textContent = game.title;
+    button.textContent = `${game.title} · Session #${game.id}`;
     button.disabled = busy;
     button.addEventListener("click", () => perform(async () => renderGame(await api(`/games/${game.id}`))));
     return button;
@@ -77,6 +78,7 @@ function renderIdea(idea, id = null) {
   $("active-game").hidden = true;
   $("review").hidden = false;
   $("idea-title").textContent = idea.title;
+  $("idea-controls").replaceChildren(...(id ? managementButtons("idea", {id, idea}) : []));
   $("review-status").textContent = id ? "SAVED GAME IDEA" : "2. REVIEW YOUR IDEA";
   $("idea-details").replaceChildren(...Object.entries(ideaFields).map(([key, label]) => {
     const section = document.createElement("div");
@@ -103,6 +105,88 @@ async function loadIdeas() {
   }));
   if (!result.ideas.length) $("ideas").textContent = "No saved ideas yet.";
 }
+
+let editing = null;
+
+function managementButtons(kind, item) {
+  const edit = document.createElement("button");
+  edit.textContent = "Edit";
+  edit.addEventListener("click", () => openEditor(kind, item));
+  const remove = document.createElement("button");
+  remove.textContent = "Delete";
+  remove.className = "danger";
+  remove.addEventListener("click", () => {
+    const warning = kind === "idea"
+      ? "Delete this saved game idea? Existing play sessions will be kept."
+      : "Delete this play session and its entire move history? This cannot be undone.";
+    if (!window.confirm(warning)) return;
+    perform(async () => {
+      await api(`/${kind === "idea" ? "ideas" : "games"}/${item.id}`, undefined, "DELETE");
+      if (kind === "game") {
+        activeGame = null;
+        localStorage.removeItem("activeGameId");
+      } else {
+        draft = null;
+        savedIdeaId = null;
+      }
+      $("review").hidden = true;
+      $("active-game").hidden = true;
+      $("empty").hidden = false;
+      await loadIdeas();
+      await loadGames();
+      $("message").textContent = kind === "idea" ? "Game idea deleted. Existing sessions are still available." : "Play session deleted.";
+    });
+  });
+  return [edit, remove];
+}
+
+function openEditor(kind, item) {
+  editing = {kind, item};
+  $("edit-error").textContent = "";
+  $("edit-heading").textContent = kind === "idea" ? "Edit saved game idea" : "Edit play session";
+  $("edit-note").textContent = kind === "idea"
+    ? "Changes apply to future sessions. Existing sessions keep their own rules."
+    : "Edit the title, rules, or players (one per line). Keep any players who have already recorded moves.";
+  const values = kind === "idea" ? item.idea : {title: item.title, rules: item.rules, players: item.players.join("\n")};
+  $("edit-fields").replaceChildren(...Object.entries(values).map(([key, value]) => {
+    const wrapper = document.createElement("div");
+    const label = document.createElement("label");
+    label.htmlFor = `edit-${key}`;
+    label.textContent = key === "title" ? "Title" : key === "players" ? "Players" : ideaFields[key];
+    const input = document.createElement(key === "title" ? "input" : "textarea");
+    input.id = `edit-${key}`;
+    input.name = key;
+    input.value = value;
+    input.required = true;
+    if (key !== "players") input.maxLength = key === "title" ? 120 : kind === "idea" ? 1200 : 10000;
+    if (key !== "title") input.rows = 4;
+    wrapper.append(label, input);
+    return wrapper;
+  }));
+  $("edit-dialog").showModal();
+}
+
+$("cancel-edit").addEventListener("click", () => $("edit-dialog").close());
+$("edit-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  perform(async () => {
+    const {kind, item} = editing;
+    const values = Object.fromEntries(new FormData($("edit-form")));
+    if (kind === "game") values.players = values.players.split("\n").map((name) => name.trim()).filter(Boolean);
+    try {
+      const result = await api(`/${kind === "idea" ? "ideas" : "games"}/${item.id}`,
+        kind === "idea" ? {idea: values} : values, "PUT");
+      if (kind === "idea") renderIdea(result.idea, result.id);
+      else renderGame(result);
+      $("edit-dialog").close();
+      await loadIdeas();
+      await loadGames();
+      $("message").textContent = "Changes saved.";
+    } catch (error) {
+      $("edit-error").textContent = error.message;
+    }
+  });
+});
 
 $("create-form").addEventListener("submit", (event) => {
   event.preventDefault();

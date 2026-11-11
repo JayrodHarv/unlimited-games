@@ -118,6 +118,63 @@ class AppTest(unittest.TestCase):
         urlopen.side_effect = TimeoutError()
         self.assertEqual(self.client.post("/api/ideas/draft", json={"prompt": "Adventure"}).status_code, 502)
 
+    def test_edit_idea_preserves_sessions_and_delete_keeps_them(self):
+        saved = self.client.post("/api/ideas", json={"idea": self.idea()}).json
+        url = f"/api/ideas/{saved['id']}"
+        original = self.client.post(url + "/instances", json={"players": ["Ada"]}).json
+        updated = {**self.idea(), "title": "Revised title", "rules": "New rules"}
+        self.assertEqual(self.client.put(url, json={"idea": updated}).status_code, 200)
+        self.assertEqual(self.client.get(f"/api/games/{original['id']}").json["rules"], original["rules"])
+        new = self.client.post(url + "/instances", json={"players": ["Lin"]}).json
+        self.assertEqual(new["title"], "Revised title")
+        self.assertIn("New rules", new["rules"])
+        self.assertEqual(self.client.delete(url).status_code, 200)
+        self.assertEqual(self.client.get("/api/ideas").json["ideas"], [])
+        self.assertEqual(self.client.get(f"/api/games/{original['id']}").status_code, 200)
+        self.assertEqual(self.client.delete(url).status_code, 404)
+
+    def test_edit_and_delete_session_preserves_history_and_idea(self):
+        saved = self.client.post("/api/ideas", json={"idea": self.idea()}).json
+        game = self.client.post(f"/api/ideas/{saved['id']}/instances", json={"players": ["Ada", "Lin"]}).json
+        url = f"/api/games/{game['id']}"
+        self.client.post(url + "/moves", json={"player": "Ada", "action": "Explore"})
+        changes = {"title": "Renamed session", "rules": "Updated rules", "players": ["Ada", "Sam"]}
+        response = self.client.put(url, json=changes)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["title"], changes["title"])
+        self.assertEqual(response.json["moves"][0]["action"], "Explore")
+        for players in [["Sam"], ["Ada", "Ada"], []]:
+            self.assertEqual(self.client.put(url, json={**changes, "players": players}).status_code, 400)
+        self.assertEqual(self.client.get(url).json["players"], ["Ada", "Sam"])
+        self.assertEqual(self.client.delete(url).status_code, 200)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(len(self.client.get("/api/ideas").json["ideas"]), 1)
+        self.assertEqual(self.client.delete(url).status_code, 404)
+
+    def test_management_validation_and_missing_records(self):
+        self.assertEqual(self.client.put("/api/ideas/999", json={"idea": self.idea()}).status_code, 404)
+        self.assertEqual(self.client.put("/api/ideas/999", json={"idea": {}}).status_code, 400)
+        self.assertEqual(self.client.put("/api/games/999", json={"title": "X", "rules": "Y", "players": ["Ada"]}).status_code, 404)
+
+    @patch.dict("os.environ", {"OPENAI_API_KEY": "test-key", "OPENAI_REASONING_EFFORT": "high"})
+    @patch("app.ai_client.urlopen")
+    def test_reasoning_effort_configuration(self, urlopen):
+        response = MagicMock()
+        response.read.return_value = json.dumps({"choices": [{"finish_reason": "stop", "message": {"content": json.dumps(self.idea())}}]})
+        urlopen.return_value.__enter__.return_value = response
+        for effort in ["high", ""]:
+            with patch.dict("os.environ", {"OPENAI_REASONING_EFFORT": effort}):
+                self.assertEqual(self.client.post("/api/ideas/draft", json={"prompt": "Adventure"}).status_code, 200)
+                payload = json.loads(urlopen.call_args.args[0].data)
+                if effort:
+                    self.assertEqual(payload["reasoning_effort"], effort)
+                else:
+                    self.assertNotIn("reasoning_effort", payload)
+        urlopen.reset_mock()
+        with patch.dict("os.environ", {"OPENAI_REASONING_EFFORT": "invalid"}):
+            self.assertEqual(self.client.post("/api/ideas/draft", json={"prompt": "Adventure"}).status_code, 503)
+            urlopen.assert_not_called()
+
     def test_frontend_and_health(self):
         for path in ["/", "/static/app.js", "/static/styles.css", "/api/health"]:
             response = self.client.get(path)

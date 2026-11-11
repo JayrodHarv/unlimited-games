@@ -24,3 +24,8 @@ summary { cursor: pointer; color: #a7e2c7; }
 .note { font-size: .85rem; }
 [hidden] { display: none !important; }
 @media (max-width: 760px) { main { grid-template-columns: 1fr; } body { padding: 24px 16px; } }
+button + button { margin-left: 8px; }
+button.danger { background: #efb3ad; color: #401b19; }
+dialog { width: min(680px, 94vw); max-height: 90vh; overflow-y: auto; background: #19212e; color: #e8edf5; border: 1px solid #435168; border-radius: 14px; padding: 24px; }
+dialog::backdrop { background: #0009; }
+#edit-error { color: #ffc7a2; }

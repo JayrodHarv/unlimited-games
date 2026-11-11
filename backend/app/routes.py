@@ -58,3 +58,25 @@ def save_idea():
 @api.post("/ideas/<int:idea_id>/instances")
 def start_instance(idea_id):
     return jsonify(game_service.start_instance(idea_id, body())), 201
+
+
+@api.put("/ideas/<int:idea_id>")
+def update_idea(idea_id):
+    return jsonify(game_service.update_idea(idea_id, body()))
+
+
+@api.delete("/ideas/<int:idea_id>")
+def delete_idea(idea_id):
+    game_service.delete_idea(idea_id)
+    return jsonify(deleted=True)
+
+
+@api.put("/games/<int:game_id>")
+def update_game(game_id):
+    return jsonify(game_service.update_game(game_id, body()))
+
+
+@api.delete("/games/<int:game_id>")
+def delete_game(game_id):
+    game_service.delete_game(game_id)
+    return jsonify(deleted=True)
