@@ -1,0 +1,210 @@
+# Unlimited Games — starter
+
+A small Python + plain HTML/CSS/JavaScript project. Flask serves both the frontend
+and JSON API from one process. Python's built-in `sqlite3` stores games, rules,
+players, and the complete ordered move history. Docker runs Gunicorn and keeps
+the SQLite database in a persistent volume. No Node build step or separate
+database container is needed.
+
+Create a mystery game by entering a timeframe and location, optional additional
+details, and a complexity.
+AI returns a structured design with a premise, objective, setup, turns, rules,
+and ending. Ask for revisions as often as needed, then approve and save the idea.
+Saved ideas can start multiple independent play sessions with different players
+and separate move histories. Revising a saved idea produces a new draft; the
+saved version remains available until you approve the new version as another idea.
+Drafts stay in the current page until saved; reloading discards unsaved work.
+
+An AI referee checks proposed moves against the rules and history. A separate AI
+call narrates the result based on that ruling. Accepted moves
+save a player-facing response, the ruling and state summary; rejected moves leave history unchanged. AI
+rulings can be imperfect, especially when the rules are ambiguous. The referee may infer
+ordinary setting details that have not yet appeared and favors reasonable investigative
+attempts, while preserving established
+facts and resolving risks and consequences under the game rules.
+
+## Scene images
+
+Set `FAL_KEY` in the root `.env` file to enable scene images via fal.ai
+FLUX.2 Turbo. Rebuild the container after changing it. A separate scene request
+runs after accepted turns; it uses the game history to decide whether visible
+characters or surroundings changed. The previous image remains visible while a
+new one is generated. Each accepted turn links to an image saved in the database. When the scene has
+not visibly changed, the same image is reused without storing a duplicate.
+Earlier sessions are filled in as images are generated; this can create multiple
+paid images when you first reopen a long session. Images and descriptions are
+saved with the session.
+Missing keys or image errors do not undo moves, and the scene can be retried.
+Scene descriptions are sent to OpenAI and fal.ai; image generation incurs fal.ai
+charges. Character consistency and change detection depend on the AI models.
+
+## AI configuration
+
+Set `OPENAI_API_KEY` in the project's root `.env` file before starting the app.
+Local runs load this file automatically; existing environment variables take
+precedence. Docker Compose also reads the root `.env` file automatically and
+passes the key into the container without copying the file into the image.
+Optionally set `OPENAI_MODEL` (default `gpt-4o-mini`) to a model supporting Chat
+Completions JSON mode. Docker Compose passes both variables to the backend.
+Set these entries in `.env` before `docker compose up --build -d`.
+Without a key, saved ideas and sessions remain accessible, but generation returns
+an actionable configuration error. Keys stay on the server. Idea prompts,
+selected preferences, and the current design for revisions are sent to OpenAI.
+Refereeing and narration also send the session rules, player names, move history
+and proposed move. Set `OPENAI_NARRATOR_MODEL` to use a different model for
+narration; otherwise it uses `OPENAI_MODEL`.
+
+The adapter uses [OpenAI JSON mode](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=chat)
+and validates every required field before showing the result. Provider errors,
+timeouts, incomplete responses, and malformed definitions leave the current draft
+intact so the user can retry.
+
+## Run with Docker
+
+Install Docker Engine/Desktop with the Compose plugin, then from this folder:
+
+```bash
+docker compose up --build -d
+```
+
+Open http://localhost:8000. Generate and revise an idea, approve it, then add
+players to start a session. Saved ideas and sessions appear in the sidebar.
+
+```bash
+docker compose logs -f app       # Show server logs
+docker compose down              # Stop; keep the saved games
+docker compose up --build -d     # Rebuild after code changes
+```
+
+The SQLite file is `/app/data/games.db` inside the container; the `game-data`
+named volume stores it on the Docker host. SQLite is an embedded file database,
+so it has no separate service, port, or database server. Do not run
+`docker compose down -v` unless you intend to delete the saved games.
+
+The published port is bound to localhost. To serve other computers, change it
+to `"8000:8000"` (or a specific host interface). This starter has no user accounts
+or access controls; shared hosting needs those plus HTTPS. Keep one app replica
+with its database on a local disk. Put AI credentials in backend environment
+variables and keep them out of frontend JavaScript and version control.
+
+## Run locally without Docker
+
+Python 3.12 is used in the container. For development:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m flask --app backend.app:create_app run --debug --port 8000
+```
+
+Open the same URL. Local development creates `data/games.db` in this project.
+The local database and Docker volume are separate. Set `DATABASE_PATH` to use
+another file. Use the Flask debug server only for local development.
+
+## Project layout
+
+| Path | Role |
+| --- | --- |
+| `backend/app/__init__.py` | App factory, frontend serving, configuration |
+| `backend/app/routes.py` | JSON API endpoints |
+| `backend/app/db.py` | SQLite connections and schema initialization |
+| `backend/app/schema.sql` | Games and moves tables |
+| `backend/app/game_service.py` | Validation and game persistence |
+| `backend/app/ai_client.py` | AI generation adapter; builds context from saved rules/history |
+| `backend/tests/test_app.py` | Persistence, validation, API and static-file checks |
+| `frontend/index.html` | Page structure |
+| `frontend/styles.css` | Responsive styling |
+| `frontend/app.js` | API requests and page updates |
+| `Dockerfile` | Python container with Gunicorn |
+| `compose.yaml` | Port, persistent storage, health check |
+| `requirements.txt` | Bounded Python dependency versions |
+
+Dependencies use major-version bounds rather than an exact lockfile. Once you
+choose provider SDKs and a deployment environment, lock the tested versions.
+
+## API
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/api/health` | App/database connection check |
+| GET | `/api/games` | List saved games |
+| POST | `/api/games` | Create a manual session (legacy API) |
+| POST | `/api/ideas/draft` | Generate or revise an unsaved idea |
+| GET | `/api/ideas` | List approved ideas |
+| POST | `/api/ideas` | Save an approved structured idea |
+| POST | `/api/ideas/<id>/instances` | Start an independent session with players |
+| GET | `/api/games/<id>` | Load rules, players, and move history |
+| POST | `/api/games/<id>/moves` | Referee a move and append it if accepted |
+
+Create body:
+
+```json
+{"title":"Space adventure","rules":"Explore a planet in turns.","players":["Ada","Lin"]}
+```
+
+Move body:
+
+```json
+{"player":"Ada","action":"Inspect the mysterious tower."}
+```
+
+Responses use JSON; successful creates return 201, invalid input returns 400,
+and missing games return 404. Accepted moves receive a consecutive turn number. The response contains `game` and
+`ruling` (with `accepted`, `response`, `explanation`, and `state`); rejections return 200
+without changing history. A changed session returns 409 so the move can be retried.
+Parameterized SQL handles stored text. Rules and history remain in SQLite;
+localStorage only remembers which game to open in your browser.
+
+## Design and persistence
+
+`POST /api/ideas/draft` takes `timeframe`, `location`, optional `details` and
+optional `complexity` for new mysteries. Revisions take `prompt` and `idea`;
+legacy creation requests using `prompt` remain supported. It returns `{ "idea": ... }` without persisting it.
+`POST /api/ideas` takes `{ "idea": ... }`; required string fields are `title`,
+`premise`, `objective`, `setup`, `turns`, `rules`, and `ending`.
+`POST /api/ideas/<id>/instances` takes `{ "players": ["Ada", "Lin"] }`.
+Each session snapshots the complete design into its rules.
+
+Schema initialization adds `ideas` and `idea_instances` tables alongside existing
+games and moves, preserving existing records. AI calls happen before any database
+write transaction. The referee receives rules, players, and move history, including previous rulings.
+It checks for changes before saving a result.
+
+## Verify
+
+After installing dependencies, from the project root:
+
+```bash
+PYTHONPATH=backend python -m unittest discover -s backend/tests -v
+```
+
+The tests use disposable SQLite files. Check actual Docker deployment with
+`docker compose up --build -d` and `docker compose ps`; this package was tested
+with Python API tests and a local Gunicorn smoke test, not an actual Docker
+build in the authoring environment.
+
+## Edit and delete
+
+Open a saved idea or play session to use its **Edit** and **Delete** buttons.
+The editor lets you change all idea fields, or a session's title, rules, and
+players. Idea edits apply to future sessions; existing sessions retain their
+rules. Session edits preserve move history and require keeping players who
+already recorded moves. Deleting an idea keeps its sessions. Deleting a session
+removes its move history. Both delete controls ask for confirmation.
+
+The API supports `PUT` and `DELETE` on `/api/ideas/<id>` and `/api/games/<id>`.
+Idea updates take `{ "idea": ... }`; session updates take `title`, `rules`,
+and `players`, with the same validation as creation.
+
+Set reasoning effort in the root `.env` file (local runs and Docker):
+
+```dotenv
+OPENAI_MODEL=gpt-6.1-sol
+OPENAI_REASONING_EFFORT=high
+```
+
+Leave `OPENAI_REASONING_EFFORT` unset or empty to use the model default. Choose
+an effort supported by the selected model; GPT-6.1 Sol supports `low`, `medium`,
+`high`, `xhigh`, and `max`. Restart the server after changing `.env`, or run
+`docker compose up --build -d` for Docker.
