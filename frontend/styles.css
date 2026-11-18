@@ -29,9 +29,12 @@ button.danger { background: #efb3ad; color: #401b19; }
 dialog { width: min(680px, 94vw); max-height: 90vh; overflow-y: auto; background: #19212e; color: #e8edf5; border: 1px solid #435168; border-radius: 14px; padding: 24px; }
 dialog::backdrop { background: #0009; }
 #edit-error { color: #ffc7a2; }
+<<<<<<< HEAD
 
 #scene-image { display: block; width: 100%; max-height: 480px; object-fit: contain; border-radius: 12px; }
 #scene-image[hidden] { display: none; }
 
 .turn-scene { display: block; width: 100%; max-width: 640px; height: auto; margin: 0.75rem 0; border-radius: 12px; }
 .turn-scene[hidden] { display: none; }
+=======
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012

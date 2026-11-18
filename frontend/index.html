@@ -9,6 +9,7 @@
 </head>
 <body>
   <header><span class="eyebrow">YOUR TABLE, YOUR RULES</span><h1>Unlimited Games</h1>
+<<<<<<< HEAD
     <p>Create and play a text-based mystery.</p></header>
   <p id="message" role="status" aria-live="polite"></p>
   <main>
@@ -19,6 +20,17 @@
           <label for="timeframe">Timeframe</label><input id="timeframe" maxlength="120" placeholder="For example, 1920s or present day" required>
           <label for="location">Location</label><input id="location" maxlength="200" placeholder="For example, Chicago or a remote island" required>
           <label for="details">Additional details (optional)</label><textarea id="details" rows="5" maxlength="5000" placeholder="Anything else you want in your mystery"></textarea>
+=======
+    <p>A starting place for text-based, turn-based games.</p></header>
+  <p id="message" role="status" aria-live="polite"></p>
+  <main>
+    <aside>
+      <section><h2>1. Imagine a game</h2>
+        <form id="create-form">
+          <label for="genre">Genre (optional)</label><select id="genre"><option value="">Surprise me</option><option>Adventure</option><option>Mystery</option><option>Strategy</option><option>Fantasy</option><option>Science fiction</option></select>
+          <label for="complexity">Complexity</label><select id="complexity"><option>Simple</option><option>Moderate</option><option>Detailed</option></select>
+          <label for="prompt">Your game idea</label><textarea id="prompt" rows="5" maxlength="5000" placeholder="Explore a drifting space station where every room changes gravity…" required></textarea>
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
           <button type="submit">Generate game idea</button>
         </form>
       </section>
@@ -41,6 +53,7 @@
           <button type="submit">Play a new instance</button>
         </form>
       </article>
+<<<<<<< HEAD
       <div id="empty"><h2>Every mystery starts with a question.</h2><p>Choose a setting, refine your mystery with AI, then save it and start playing.</p></div>
       <article id="active-game" hidden>
         <span class="eyebrow">GAME IN PROGRESS</span><h2 id="game-title"></h2><div id="game-controls"></div>
@@ -50,13 +63,25 @@
           <p id="scene-status" role="status"></p>
           <button id="scene-retry" type="button" hidden>Retry scene image</button>
         </section>
+=======
+      <div id="empty"><h2>Every game starts with an idea.</h2><p>Describe an idea, refine it with AI, then save it and start playing.</p></div>
+      <article id="active-game" hidden>
+        <span class="eyebrow">GAME IN PROGRESS</span><h2 id="game-title"></h2><div id="game-controls"></div>
+        <details open><summary>Rules</summary><p id="game-rules" class="preserve"></p></details>
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
         <h3>Move history</h3><ol id="moves"></ol>
         <form id="move-form">
           <label for="player">Player</label><select id="player"></select>
           <label for="action">Move</label><textarea id="action" rows="3" maxlength="5000" placeholder="What happens this turn?" required></textarea>
+<<<<<<< HEAD
           <button type="submit">Submit move</button>
         </form>
         <p class="note">The AI referee checks moves against the rules and explains its ruling.</p>
+=======
+          <button type="submit">Record move</button>
+        </form>
+        <p class="note">Pass the screen between players and follow the saved rules. Moves are recorded as written; players resolve outcomes manually.</p>
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
       </article>
     </section>
   </main>

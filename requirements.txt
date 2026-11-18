@@ -1,4 +1,7 @@
 Flask>=3.1,<4
 gunicorn>=23,<24
 python-dotenv>=1,<2
+<<<<<<< HEAD
 fal-client>=1.0.3,<2
+=======
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012

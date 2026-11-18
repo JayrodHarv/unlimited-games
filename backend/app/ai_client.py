@@ -18,6 +18,7 @@ def generate_idea(context):
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": (
+<<<<<<< HEAD
                 "Design a complete playable text-based, turn-based mystery investigation. "
                 "Every game and revision must remain a mystery, whatever other setting or theme is requested. "
                 "Use the supplied timeframe, location and additional details as the setting. "
@@ -29,6 +30,14 @@ def generate_idea(context):
                 "possible actions, flexible resolution mechanics, turn order and resolution conditions. "
                 "The AI referee resolves player moves. Avoid unnecessary permission gates or rigid action lists. "
                 "When revising, preserve the existing design except where requested, while keeping it a mystery."
+=======
+                "Design a complete playable text-based, turn-based game. Return only a JSON object "
+                f"with these string fields: {', '.join(FIELDS)}. Title at most 120 characters; "
+                "each other field at most 1200 characters. Include concrete starting resources, "
+                "legal actions, resolution mechanics, turn order and win/loss conditions. "
+                "Players resolve moves manually. Do not require an AI referee. "
+                "When revising, preserve the existing design except where requested."
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
             )},
             {"role": "user", "content": json.dumps(context)},
         ],
@@ -61,6 +70,7 @@ def generate_idea(context):
 
 def build_context(game):
     return {key: game[key] for key in ("title", "rules", "players", "moves")}
+<<<<<<< HEAD
 
 
 def referee_move(game, player, action):
@@ -168,3 +178,5 @@ def narrate_move(game, player, action, ruling):
         return text.strip()
     except (URLError, TimeoutError, OSError, ValueError, KeyError, IndexError, TypeError):
         raise BadGateway("AI could not write a response to this move. Please try again.") from None
+=======
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012

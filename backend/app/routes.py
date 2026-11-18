@@ -37,8 +37,12 @@ def get_game(game_id):
 
 @api.post("/games/<int:game_id>/moves")
 def move(game_id):
+<<<<<<< HEAD
     result = game_service.record_move(game_id, body())
     return jsonify(result), 201 if result["ruling"]["accepted"] else 200
+=======
+    return jsonify(game_service.record_move(game_id, body())), 201
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
 
 
 @api.post("/ideas/draft")
@@ -81,6 +85,7 @@ def update_game(game_id):
 def delete_game(game_id):
     game_service.delete_game(game_id)
     return jsonify(deleted=True)
+<<<<<<< HEAD
 
 
 @api.get("/games/<int:game_id>/scene")
@@ -111,3 +116,5 @@ def get_scene_image(game_id, image_id):
         raise NotFound("Scene image not found.")
     header, data = row["image_data"].split(",", 1)
     return Response(base64.b64decode(data), mimetype=header[5:].split(";")[0])
+=======
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012

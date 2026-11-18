@@ -3,8 +3,11 @@ let activeGame = null;
 let busy = false;
 let draft = null;
 let savedIdeaId = null;
+<<<<<<< HEAD
 let sceneGeneration = null;
 let sceneRequest = 0;
+=======
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
 
 async function api(path, data, method = "POST") {
   const response = await fetch(`/api${path}`, data === undefined && method === "POST" ? {} : {
@@ -30,6 +33,7 @@ async function perform(task) {
   }
 }
 
+<<<<<<< HEAD
 function showSceneHistory(gameId, scenes) {
   if (!activeGame || activeGame.id !== gameId) return;
   for (const scene of scenes) {
@@ -87,6 +91,9 @@ function renderGame(game) {
     $("scene-image").removeAttribute("src");
     $("scene-status").textContent = "";
   }
+=======
+function renderGame(game) {
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
   activeGame = game;
   $("review").hidden = true;
   $("empty").hidden = true;
@@ -108,6 +115,7 @@ function renderGame(game) {
     text.className = "preserve";
     text.textContent = move.action;
     item.append(heading, text);
+<<<<<<< HEAD
     const sceneImage = document.createElement("img");
     sceneImage.className = "turn-scene";
     sceneImage.dataset.turn = String(move.turn_number);
@@ -130,6 +138,12 @@ function renderGame(game) {
 
   localStorage.setItem("activeGameId", String(game.id));
   refreshScene(game.id);
+=======
+    return item;
+  }));
+  // The player remains manually selectable; this starter imposes no turn rules.
+  localStorage.setItem("activeGameId", String(game.id));
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
 }
 
 async function loadGames() {
@@ -269,8 +283,12 @@ $("create-form").addEventListener("submit", (event) => {
   perform(async () => {
     $("message").textContent = "Developing your game idea…";
     const result = await api("/ideas/draft", {
+<<<<<<< HEAD
       timeframe: $("timeframe").value, location: $("location").value,
       details: $("details").value, complexity: $("complexity").value,
+=======
+      prompt: $("prompt").value, genre: $("genre").value, complexity: $("complexity").value,
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
     });
     renderIdea(result.idea);
     $("revision").value = "";
@@ -311,6 +329,7 @@ $("move-form").addEventListener("submit", (event) => {
   event.preventDefault();
   perform(async () => {
     const player = $("player").value;
+<<<<<<< HEAD
     $("message").textContent = "The referee is reviewing your move?";
     const result = await api(`/games/${activeGame.id}/moves`, {
       player, action: $("action").value,
@@ -319,6 +338,13 @@ $("move-form").addEventListener("submit", (event) => {
     $("player").value = player;
     $("message").textContent = result.ruling.accepted ? "Move accepted." : `Move rejected: ${result.ruling.response} (${result.ruling.explanation})`;
     if (result.ruling.accepted) $("action").value = "";
+=======
+    renderGame(await api(`/games/${activeGame.id}/moves`, {
+      player, action: $("action").value,
+    }));
+    $("player").value = player;
+    $("action").value = "";
+>>>>>>> ef89f24f1df155305588549a31ace16df59da012
   });
 });
 
