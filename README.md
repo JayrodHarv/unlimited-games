@@ -6,12 +6,8 @@ players, and the complete ordered move history. Docker runs Gunicorn and keeps
 the SQLite database in a persistent volume. No Node build step or separate
 database container is needed.
 
-<<<<<<< HEAD
 Create a mystery game by entering a timeframe and location, optional additional
 details, and a complexity.
-=======
-Create a game by describing an idea and optionally choosing a genre and complexity.
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
 AI returns a structured design with a premise, objective, setup, turns, rules,
 and ending. Ask for revisions as often as needed, then approve and save the idea.
 Saved ideas can start multiple independent play sessions with different players
@@ -19,7 +15,6 @@ and separate move histories. Revising a saved idea produces a new draft; the
 saved version remains available until you approve the new version as another idea.
 Drafts stay in the current page until saved; reloading discards unsaved work.
 
-<<<<<<< HEAD
 An AI referee checks proposed moves against the rules and history. A separate AI
 call narrates the result based on that ruling. Accepted moves
 save a player-facing response, the ruling and state summary; rejected moves leave history unchanged. AI
@@ -42,11 +37,6 @@ saved with the session.
 Missing keys or image errors do not undo moves, and the scene can be retried.
 Scene descriptions are sent to OpenAI and fal.ai; image generation incurs fal.ai
 charges. Character consistency and change detection depend on the AI models.
-=======
-Play currently uses manual, pass-the-screen move recording. Players follow the
-generated rules and resolve outcomes themselves; AI does not referee moves or
-maintain game-specific state.
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
 
 ## AI configuration
 
@@ -60,12 +50,9 @@ Set these entries in `.env` before `docker compose up --build -d`.
 Without a key, saved ideas and sessions remain accessible, but generation returns
 an actionable configuration error. Keys stay on the server. Idea prompts,
 selected preferences, and the current design for revisions are sent to OpenAI.
-<<<<<<< HEAD
 Refereeing and narration also send the session rules, player names, move history
 and proposed move. Set `OPENAI_NARRATOR_MODEL` to use a different model for
 narration; otherwise it uses `OPENAI_MODEL`.
-=======
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
 
 The adapter uses [OpenAI JSON mode](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=chat)
 and validates every required field before showing the result. Provider errors,
@@ -148,11 +135,7 @@ choose provider SDKs and a deployment environment, lock the tested versions.
 | POST | `/api/ideas` | Save an approved structured idea |
 | POST | `/api/ideas/<id>/instances` | Start an independent session with players |
 | GET | `/api/games/<id>` | Load rules, players, and move history |
-<<<<<<< HEAD
 | POST | `/api/games/<id>/moves` | Referee a move and append it if accepted |
-=======
-| POST | `/api/games/<id>/moves` | Append a move |
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
 
 Create body:
 
@@ -167,26 +150,17 @@ Move body:
 ```
 
 Responses use JSON; successful creates return 201, invalid input returns 400,
-<<<<<<< HEAD
 and missing games return 404. Accepted moves receive a consecutive turn number. The response contains `game` and
 `ruling` (with `accepted`, `response`, `explanation`, and `state`); rejections return 200
 without changing history. A changed session returns 409 so the move can be retried.
-=======
-and missing games return 404. Each move receives a consecutive turn number.
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
 Parameterized SQL handles stored text. Rules and history remain in SQLite;
 localStorage only remembers which game to open in your browser.
 
 ## Design and persistence
 
-<<<<<<< HEAD
 `POST /api/ideas/draft` takes `timeframe`, `location`, optional `details` and
 optional `complexity` for new mysteries. Revisions take `prompt` and `idea`;
 legacy creation requests using `prompt` remain supported. It returns `{ "idea": ... }` without persisting it.
-=======
-`POST /api/ideas/draft` takes `prompt`, optional `genre` and `complexity`, and
-optional `idea` for revisions. It returns `{ "idea": ... }` without persisting it.
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
 `POST /api/ideas` takes `{ "idea": ... }`; required string fields are `title`,
 `premise`, `objective`, `setup`, `turns`, `rules`, and `ending`.
 `POST /api/ideas/<id>/instances` takes `{ "players": ["Ada", "Lin"] }`.
@@ -194,13 +168,8 @@ Each session snapshots the complete design into its rules.
 
 Schema initialization adds `ideas` and `idea_instances` tables alongside existing
 games and moves, preserving existing records. AI calls happen before any database
-<<<<<<< HEAD
 write transaction. The referee receives rules, players, and move history, including previous rulings.
 It checks for changes before saving a result.
-=======
-write transaction. Further AI play support can use `build_context(game)` for the
-rules, players, and ordered move history.
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
 
 ## Verify
 

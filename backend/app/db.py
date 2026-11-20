@@ -25,7 +25,6 @@ def init_app(app):
         connection = get_db()
         connection.execute("PRAGMA journal_mode = WAL")
         connection.executescript(Path(__file__).with_name("schema.sql").read_text())
-<<<<<<< HEAD
         columns = {row["name"] for row in connection.execute("PRAGMA table_info(moves)")}
         for name in ("referee_explanation", "referee_state", "referee_response"):
             if name not in columns:
@@ -38,6 +37,4 @@ def init_app(app):
         connection.execute("INSERT OR IGNORE INTO scene_turns (game_id, turn_number, image_id) "
                            "SELECT s.game_id, s.turn_number, (SELECT MAX(i.id) FROM scene_images i WHERE i.game_id = s.game_id) "
                            "FROM scenes s WHERE s.turn_number >= 0")
-=======
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
         connection.commit()

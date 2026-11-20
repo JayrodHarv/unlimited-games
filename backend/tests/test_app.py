@@ -19,11 +19,8 @@ class AppTest(unittest.TestCase):
         self.path = Path(self.directory.name) / "games.db"
         self.app = create_app(self.path)
         self.client = self.app.test_client()
-<<<<<<< HEAD
         self.narrator = patch("app.ai_client.narrate_move", return_value="The door opens.").start()
         self.referee = patch("app.ai_client.referee_move", return_value={"accepted": True, "response": "The door opens.", "explanation": "Allowed", "state": "Play continues"}).start()
-=======
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
 
     def tearDown(self):
         self.directory.cleanup()
@@ -62,7 +59,6 @@ class AppTest(unittest.TestCase):
             self.assertEqual(self.client.post(url, json=payload).status_code, 400)
         self.assertEqual(self.client.get(f"/api/games/{game['id']}").json["moves"], [])
         valid = self.client.post(url, json={"player": "Ada", "action": "Move"})
-<<<<<<< HEAD
         self.assertEqual(valid.json["game"]["moves"][0]["turn_number"], 1)
 
     def test_referee_rejection_failure_and_persistence(self):
@@ -168,9 +164,6 @@ class AppTest(unittest.TestCase):
         game = self.create_game()
         self.assertEqual(self.client.post(f"/api/games/{game['id']}/scene").status_code, 503)
         self.assertEqual(self.client.post(f"/api/games/{game['id']}/moves", json={"player": "Ada", "action": "Look around"}).status_code, 201)
-=======
-        self.assertEqual(valid.json["moves"][0]["turn_number"], 1)
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
 
     def test_validation_and_missing_game(self):
         for payload in [[], {}, {"title": "X", "rules": "Y", "players": ["Ada", " Ada "]}]:
@@ -194,18 +187,14 @@ class AppTest(unittest.TestCase):
         self.assertEqual(response.json["idea"], revised)
         self.assertEqual(generate.call_args.args[0]["current_idea"], original)
         self.assertEqual(generate.call_args.args[0]["request"], "Make it cooperative")
-<<<<<<< HEAD
         self.assertEqual(generate.call_args.args[0]["genre"], "Mystery")
         self.client.post("/api/ideas/draft", json={"prompt": "A game", "genre": "Strategy"})
         self.assertEqual(generate.call_args.args[0]["genre"], "Mystery")
-=======
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
         saved = self.client.post("/api/ideas", json={"idea": revised})
         self.assertEqual(saved.status_code, 201)
         restarted = create_app(self.path).test_client()
         self.assertEqual(restarted.get("/api/ideas").json["ideas"][0]["idea"], revised)
 
-<<<<<<< HEAD
     @patch("app.ai_client.generate_idea")
     def test_mystery_setting_fields(self, generate):
         generate.return_value = self.idea()
@@ -222,8 +211,6 @@ class AppTest(unittest.TestCase):
                      {"timeframe": "Present", "location": "London", "details": []}):
             self.assertEqual(self.client.post(url, json=body).status_code, 400)
 
-=======
->>>>>>> ef89f24f1df155305588549a31ace16df59da012
     def test_independent_instances_and_invalid_players(self):
         saved = self.client.post("/api/ideas", json={"idea": self.idea()}).json
         url = f"/api/ideas/{saved['id']}/instances"
